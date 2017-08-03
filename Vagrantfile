@@ -11,6 +11,7 @@ Vagrant.configure("2") do |config|
                 v.memory = 1024
                 v.cpus = 1
             end
+            mariadb.vm.provision :shell, path: "bash/bootstrap_avahi.sh", run: "always"
             # All vms have been provisioned. Run Ansible
             if host_id == HOSTS
                 mariadb.vm.provision :ansible do |ansible|
