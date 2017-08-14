@@ -1,1 +1,4 @@
 .vagrant/*
+*.retry
+MariaDBCluster/.DS_Store
+MariaDBCluster/.travis.yml
