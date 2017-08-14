@@ -2,3 +2,4 @@
 *.retry
 MariaDBCluster/.DS_Store
 MariaDBCluster/.travis.yml
+.DS_Store
