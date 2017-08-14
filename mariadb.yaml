@@ -1,7 +1,5 @@
 ---
   - hosts: all
-     become: yes
-     become_user: root
-     roles: {
-       "role": "MariaDBCluster"
-       }
+    become: "yes"
+    become_user: "root"
+    roles: ["MariaDBCluster"]
