@@ -3,6 +3,89 @@
   - name: Add MariaDB Repository
     yum_repository:
       name: MariaDB
-      baseurl: http://yum.mariadb.org/10.1/centos7-amd64
+      description: MariaDB 10.2 Yum Repository
+      baseurl: http://yum.mariadb.org/10.2/centos7-amd64
       gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
       gpgcheck: 1
+
+  - name: Install MariaDB Packages
+    yum:
+      name: [ "MariaDB-aws-key-management",
+              "MariaDB-backup",
+              "MariaDB-client",
+              "MariaDB-common",
+              "MariaDB-compat",
+              "MariaDB-connect-engine",
+              "MariaDB-cracklib-password-check",
+              "MariaDB-devel",
+              "MariaDB-gssapi-server",
+              "MariaDB-oqgraph-engine",
+              "MariaDB-rocksdb-engine",
+              "MariaDB-server",
+              "MariaDB-shared",
+              "MariaDB-test",
+              "MariaDB-tokudb-engine" ]
+      enablerepo: "MariaDB"
+      state: installed
+
+  - name: Create MariaDB Data Partition
+    parted:
+      device: /dev/sdb
+      number: 1
+      state: present
+
+  - name: Create MariaDB Log Partition
+    parted:
+      device: /dev/sdc
+      number: 1
+      state: present
+
+  - name: Create MariaDB Data Partition FS
+    filesystem:
+      fstype: ext4
+      dev: /dev/sdb1
+
+  - name: Create MariaDB Log Partition FS
+    filesystem:
+      fstype: ext4
+      dev: /dev/sdc1
+
+  - name: Create MariaDB Data Dir
+    file:
+      path: /data/mariadb/
+      state: directory
+      mode: 0755
+      owner: mysql
+      group: mysql
+
+  - name: Create MariaDB Log Dir
+    file:
+      path: /log/mariadb/
+      state: directory
+      mode: 0755
+      owner: mysql
+      group: mysql
+
+  - name: Mount MariaDB Data
+    mount:
+      path: /data/mariadb
+      src: /dev/sdb1
+      fstype: ext4
+      opts: noatime,data=writeback,defaults
+      state: mounted
+
+  - name: Mount MariaDB Log
+    mount:
+      path: /log/mariadb
+      src: /dev/sdc1
+      fstype: ext4
+      opts: noatime,data=writeback,defaults
+      state: mounted
+
+  - name: Set Linux Swapiness
+    sysctl:
+      name: vm.swappiness
+      value: 0
+      sysctl_set: yes
+      state: present
+      reload: yes
