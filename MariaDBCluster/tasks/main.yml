@@ -140,24 +140,25 @@
       dest: /tmp
     when: ansible_hostname == "mariadb1" and mysqldump_status.changed == True
 
-#  - name: Does the mysqldump file exist locally?
-#    local_action:
-#      stat:
-#        path: /tmp/mariadb1/home/vagrant/mysqldump_mariadb1.sql
-#      register: dump_file
+  - name: Does the mysqldump file exist locally?
+    stat:
+      path: /tmp/mariadb1/home/vagrant/mysqldump_mariadb1.sql
+      checksum_algorithm: sha1
+    register: dump_file
+    become: no
+    delegate_to: 127.0.0.1
+    run_once: true
 
-#  - name: Checksum mysqldump file
-#    local_action:
-#      shell: "cat /tmp/mariadb1/home/vagrant/mysqldump_mariadb1.sql | md5"
-#      register: command_output
-#    when: dump_file.stat.exists == True
+  - name: Debug
+    debug:
+      var: dump_file
+      verbosity: 2
 
-#  - name: Copy mysqlfile to other hosts if needed
-#    copy:
-#      src: /home/vagrant/mysqldump_mariadb1.sql
-#      dest: /home/vagrant
-#      args:
-#        creates: /home/vagrant/mysqldump_mariadb1.sql
-#    when: ansible_hostname != mariadb1 and dump_file.stat.exists == True and command_output.stdout == 'b3d08593a346088a2e38ae2e46d0f387'
+  - name: Copy mysqlfile to other hosts if needed
+    copy:
+      src: /tmp/mariadb1/home/vagrant/mysqldump_mariadb1.sql
+      dest: /home/vagrant
+      force: no
+    when: ansible_hostname != "mariadb1" and dump_file.stat.exists == True and dump_file.stat.checksum == mariadb_mysqldump_md5
 
   #- name: Restore the mysqlfile if needed

@@ -5,6 +5,7 @@ innodb_cache: "{{ (ansible_memtotal_mb / 2) | int }}M"
 
 # vars file for MariaDBCluster
 mariadb_config_file: "/etc/my.cnf.d/server.cnf"
+mariadb_mysqldump_md5: "462bfc5f8b662c32b4f6126309ee2fcb8cdd9ce0"
 # Config for all MariaDB Servers in the Cluster
 mariadb_base_config:
    innodb_log_file_size: 50M
