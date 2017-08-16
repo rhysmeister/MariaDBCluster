@@ -1,2 +1,36 @@
 ---
+# 50 % RAM
+innodb_cache_unit: "M"
+innodb_cache: "{{ (ansible_memtotal_mb / 2) | int }}M"
+
 # vars file for MariaDBCluster
+mariadb_config_file: "/etc/my.cnf.d/server.cnf"
+# Config for all MariaDB Servers in the Cluster
+mariadb_base_config:
+   innodb_log_file_size: 50M
+   innodb_buffer_pool_instances: 8
+   innodb_buffer_pool_size: "{{ innodb_cache }}"
+   innodb_log_buffer_size: 8M
+   innodb_flush_log_at_trx_commit: 1
+   #innodb_flush_method: DIRECT_IO
+   innodb_file_per_table: 1
+   innodb_doublewrite: 1
+   #innodb_buffer_pool_dump_at_shutdown: 1
+   #innodb_buffer_pool_load_at_startup: 1
+   sync_binlog: 1
+   datadir: /data/mariadb/db
+   log_error: /log/mariadb/mariadb.log
+   slow_query_log_file: /log/mariadb/mariadb_slow.log
+   general_log_file: /log/mariadb/mariadb_general.log
+   log_bin: /log/mariadb/mariadb-bin.log
+   log_bin_index: /log/mariadb/mariadb-bin.log.index
+   relay_log: /log/mariadb/mariadb-relay.log
+   relay_log_index: /log/mariadb/mariadb-relay.log.index
+   relay_log_info_file: /log/mariadb/mariadb-relay.info
+   performance_schema: 1
+   key_buffer_size: 16M
+   query_cache_size: 0M
+   lc_messages_dir: /usr/share/mysql/
+
+# mariadb_master_config
+# mariadb_slave_config

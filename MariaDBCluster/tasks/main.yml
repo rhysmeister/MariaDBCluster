@@ -10,21 +10,16 @@
 
   - name: Install MariaDB Packages
     yum:
-      name: [ "MariaDB-aws-key-management",
-              "MariaDB-backup",
+      name: [ "MariaDB-backup",
               "MariaDB-client",
               "MariaDB-common",
               "MariaDB-compat",
               "MariaDB-connect-engine",
               "MariaDB-cracklib-password-check",
               "MariaDB-devel",
-              "MariaDB-gssapi-server",
-              "MariaDB-oqgraph-engine",
-              "MariaDB-rocksdb-engine",
               "MariaDB-server",
               "MariaDB-shared",
-              "MariaDB-test",
-              "MariaDB-tokudb-engine" ]
+              "MariaDB-test" ]
       enablerepo: "MariaDB"
       state: installed
 
@@ -54,24 +49,26 @@
     file:
       path: /data/mariadb/
       state: directory
-      mode: 0755
+      mode: 0700
       owner: mysql
       group: mysql
+      recurse: yes
 
   - name: Create MariaDB Log Dir
     file:
       path: /log/mariadb/
       state: directory
-      mode: 0755
+      mode: 0700
       owner: mysql
       group: mysql
+      recurse: yes
 
   - name: Mount MariaDB Data
     mount:
       path: /data/mariadb
       src: /dev/sdb1
       fstype: ext4
-      opts: noatime,data=writeback,defaults
+      opts: noatime,data=writeback,noexec
       state: mounted
 
   - name: Mount MariaDB Log
@@ -79,13 +76,88 @@
       path: /log/mariadb
       src: /dev/sdc1
       fstype: ext4
-      opts: noatime,data=writeback,defaults
+      opts: noatime,data=writeback,noexec
       state: mounted
 
-  - name: Set Linux Swapiness
+  - name: Set Linux Swappiness
     sysctl:
       name: vm.swappiness
       value: 0
       sysctl_set: yes
       state: present
       reload: yes
+
+  - name: Disable selinux (to be changed)
+    selinux:
+      state: disabled
+
+  - name: MariaDB Base Configuration
+    ini_file:
+      path: "{{ mariadb_config_file }}"
+      section: mysqld
+      option: "{{ item.key }}"
+      value: "{{ item.value }}"
+      state: present
+    with_dict: "{{ mariadb_base_config }}"
+
+  - name: Create directory for MariaDB Database Files
+    file:
+      path: /data/mariadb/db
+      owner: mysql
+      group: mysql
+      mode: 0700
+      state: directory
+      recurse: yes
+
+  - name: mysql_install_db
+    command: mysql_install_db --defaults-file=/etc/my.cnf
+    args:
+      creates: /data/mariadb/db/mysql/user.frm
+    become_user: mysql
+
+  - name: Start MariaDB
+    service:
+      name: mysql
+      state: started
+
+  - name: Run mysql_secure_installation on one instance only
+    shell: "ROOT_PASSWORD=$(date +%s | sha256sum | base64 | head -c 10) && echo -e \"\n\n$ROOT_PASSWORD\n$ROOT_PASSWORD\n\n\n\n\n \" | mysql_secure_installation 2>/dev/null && echo \"$ROOT_PASSWORD\" > /home/vagrant/mariadb_pw.txt && touch /home/vagrant/mysql_secure_installation.executed"
+    args:
+      creates: "/home/vagrant/mysql_secure_installation.executed"
+    when: ansible_hostname == "mariadb1"
+
+  - name: Execute mysqldump on primary master server
+    shell: "mysqldump --all-databases --single-transaction --routines --triggers -u root -p$(cat mariadb_pw.txt) > mysqldump_$(hostname).sql"
+    args:
+      chdir: /home/vagrant
+      creates: /home/vagrant/mysqldump_mariadb1.sql
+    when: ansible_hostname == "mariadb1"
+    register: mysqldump_status
+
+  - name: Fetch mysqldump file if needed
+    fetch:
+      src: /home/vagrant/mysqldump_mariadb1.sql
+      dest: /tmp
+    when: ansible_hostname == "mariadb1" and mysqldump_status.changed == True
+
+#  - name: Does the mysqldump file exist locally?
+#    local_action:
+#      stat:
+#        path: /tmp/mariadb1/home/vagrant/mysqldump_mariadb1.sql
+#      register: dump_file
+
+#  - name: Checksum mysqldump file
+#    local_action:
+#      shell: "cat /tmp/mariadb1/home/vagrant/mysqldump_mariadb1.sql | md5"
+#      register: command_output
+#    when: dump_file.stat.exists == True
+
+#  - name: Copy mysqlfile to other hosts if needed
+#    copy:
+#      src: /home/vagrant/mysqldump_mariadb1.sql
+#      dest: /home/vagrant
+#      args:
+#        creates: /home/vagrant/mysqldump_mariadb1.sql
+#    when: ansible_hostname != mariadb1 and dump_file.stat.exists == True and command_output.stdout == 'b3d08593a346088a2e38ae2e46d0f387'
+
+  #- name: Restore the mysqlfile if needed
