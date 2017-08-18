@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
                 device=0
                 [ "data", "log" ].each do |volume|
                 # MariaDB volumes
-                file_to_disk = "./mariadb#{host_id}_#{volume}.vdi"
+                file_to_disk = "mariadb#{host_id}_#{volume}.vdi"
                   unless File.exist?(file_to_disk)
                   #  v.customize['createhd',
                   #               '--filename',

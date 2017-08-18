@@ -1,4 +1,18 @@
 ---
+mariadb_users:
+  user1:
+    username: "replication"
+    password: 'secretX123'
+    priv: "*.*:REPLICATION CLIENT,REPLICATION SLAVE"
+  user2:
+    username: "nagios"
+    password: 'secretX123'
+    priv: "*.*:SUPER"
+  user3:
+    username: ro_user
+    password: 'secretX123'
+    priv: "*.*:SELECT"
+
 # 50 % RAM
 innodb_cache_unit: "M"
 innodb_cache: "{{ (ansible_memtotal_mb / 2) | int }}M"
@@ -35,3 +49,5 @@ mariadb_base_config:
 
 # mariadb_master_config
 # mariadb_slave_config
+
+additional_packages: [ "MySQL-python" ]

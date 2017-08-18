@@ -23,6 +23,11 @@
       enablerepo: "MariaDB"
       state: installed
 
+  - name: Install additional Packages
+    yum:
+      name: "{{ additional_packages }}"
+      state: installed
+
   - name: Create MariaDB Data Partition
     parted:
       device: /dev/sdb
@@ -91,6 +96,15 @@
     selinux:
       state: disabled
 
+  - name: Reboot Server
+    shell: sleep 2 && /sbin/shutdown -r now
+    async: 1
+    poll: 0
+
+  - name: Wait for the server to finish rebooting
+    become: no
+    local_action: wait_for host="{{ ansible_hostname }}" delay=15 state=started port=22 connect_timeout=10 timeout=180
+
   - name: MariaDB Base Configuration
     ini_file:
       path: "{{ mariadb_config_file }}"
@@ -119,6 +133,20 @@
     service:
       name: mysql
       state: started
+
+  - name: Debug mariadb_users
+    debug:
+      msg: "{{ item }} "
+      verbosity: 2
+    with_dict: "{{ mariadb_users }}"
+
+  - name: Add MySQL Users to main instance
+    mysql_user:
+      name: "{{ item.value.username }}"
+      password: "{{ item.value.password }}"
+      priv: "{{ item.value.priv }}"
+    with_dict: "{{ mariadb_users }}"
+    when: ansible_hostname == "mariadb1"
 
   - name: Run mysql_secure_installation on one instance only
     shell: "ROOT_PASSWORD=$(date +%s | sha256sum | base64 | head -c 10) && echo -e \"\n\n$ROOT_PASSWORD\n$ROOT_PASSWORD\n\n\n\n\n \" | mysql_secure_installation 2>/dev/null && echo \"$ROOT_PASSWORD\" > /home/vagrant/mariadb_pw.txt && touch /home/vagrant/mysql_secure_installation.executed"
