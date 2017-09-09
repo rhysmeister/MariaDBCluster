@@ -11,6 +11,7 @@ Vagrant.configure("2") do |config|
                 v.name = "mariadb#{host_id}"
                 v.memory = 1024
                 v.cpus = 1
+                v.linked_clone = true
                 device=0
                 [ "data", "log" ].each do |volume|
                 # MariaDB volumes
