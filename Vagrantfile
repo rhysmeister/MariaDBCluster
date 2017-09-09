@@ -16,25 +16,8 @@ Vagrant.configure("2") do |config|
                 # MariaDB volumes
                 file_to_disk = "mariadb#{host_id}_#{volume}.vdi"
                   unless File.exist?(file_to_disk)
-                  #  v.customize['createhd',
-                  #               '--filename',
-                  #               "#{file_to_disk}",
-                  #               '--size',
-                  #               (500 * 1024).floor]
                     v.customize ['createhd', '--filename', "#{file_to_disk}", '--size', (5 * 1024).floor]
                   end
-                  #v.customize ['storageattach',
-                  #             :id,
-                  #             '--storagectl',
-                  #             'SATA Controller',
-                  #             '--port',
-                  #             1,
-                  #             '--device',
-                  #             0,
-                  #             '--type',
-                  #             'hdd',
-                  #             '--medium',
-                  #             "#{file_to_disk}"]
                   v.customize ['storageattach', :id, '--storagectl', 'IDE Controller', '--port', 1, '--device', device, '--type', 'hdd', '--medium', "#{file_to_disk}"]
                   device+=1
                 end
@@ -49,7 +32,6 @@ Vagrant.configure("2") do |config|
                       "masters" => ["mariadb1", "mariadb2"],
                       "slaves" => ["mariadb3", "mariadb4", "mariadb5"]
                     }
-                    #ansible.inventory_path = ".vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory"
                 end
             end
         end
